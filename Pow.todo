@@ -1,0 +1,36 @@
+
+Project :
+Started on 2014.02.19
+
+https://github.com/medikoo/event-emitter
+https://github.com/component/emitter
+
+Documentations :
+ ✔ Github repository @done (14-02-24 00:28)
+ ☐ Check whole comments
+ ☐ Website
+
+Core :
+  ✔ String prototype root @done (14-02-19 22:57)
+
+Functions :
+  ✔ "event".pow() ; as Trigger @done (14-02-19 23:24)
+  ✔ "event".powoff() ; as Trigger paused @done (14-02-22 00:53)
+  ✔ "event".powon() ; as Trigger awake @done (14-02-22 00:53)
+  ✔ "event".wire() ; as Add event listener @done (14-02-19 23:41)
+  ✔ "event".wireonce() ; as Add event listener removed once called @done (14-02-22 00:21)
+  ☐ "event".wiresafe() ; as Add try-catched event listener
+  ✔ "event".unwire() ; as Remove event listener @done (14-02-22 01:15)
+  ☐ "event".wireless() ; as Add asynchronous event listener
+  ☐ "event".wireout() ; as Add pre/post callbacks
+  ✔ "event".wireoff() ; as Pause event listener @done (14-02-23 11:44)
+  ✔ "event".wireon() ; as Awake event listener @done (14-02-23 11:44)
+
+Attributes :
+  ✔ "event".wires @done (14-02-22 00:55)
+  ✔ "event".wires_stats @done (14-02-22 00:55)
+
+Integration :
+  ☐ Emitter Receiver
+  ☐ jQuery events
+  ☐ Socket.io

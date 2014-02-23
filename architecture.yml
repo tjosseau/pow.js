@@ -1,0 +1,37 @@
+
+#------------------------------------------------------#
+# mkprj - Project Architecture Generator               #
+# https://github.com/tjosseau/mkprj                    #
+_VERSION_: 1.2
+#------------------------------------------------------#
+
+#### Pow architecture ####
+
+# Dependencies #
+    # Frontend package manager
+bower.json: 0
+bower_components: 0
+    # Server package manager
+package.json: 0
+node_modules: 0
+    # Installation
+!install.sh: |
+    bower install -save jquery
+    npm install -save socket.io
+
+# Documentation #
+README.md: @README.md
+project.todo: @blank.todo
+
+# Library
+Pow:
+    Pow.js: 1
+
+# Index #
+index.html: @index.html     # Client index
+index.js: 1                 # Server index
+
+test:
+    ideas.js: 1
+
+var:
