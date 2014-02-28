@@ -2,8 +2,8 @@
  * Pow Event manager
  *
  * @author      Thomas Josseau
- * @version     0.1.1
- * @date        2014.02.23
+ * @version     0.2.1
+ * @date        2014.02.28
  * @link        https://github.com/tjosseau/objectyve
  *
  * @description
@@ -22,14 +22,16 @@
 
     var VERSION = [
             0,                      // Version of library's Core
-            1,                      // Updates - Modifications
+            2,                      // Updates - Modifications
             1,                      // Minor updates - Corrections
             new Date(
                 2014,               // Year \
                 2               -1, // Month >---- of last update
-                23                  // Day  /
+                28                  // Day  /
             )
         ],
+
+        COMMON = '_common_',
 
         echo = function()
         {
@@ -65,162 +67,207 @@
         },
 
         wires = {},
-        wires_stats = {},
-        model = {
-            wire : {
-                state : true,
-                listeners : {}
-            },
-            wire_stats : {
-                triggered : 0,
-                listeners : {}
-            },
-            listener : {
-                state : true,
-                fn : null,
-                unique : false
-            }
-        },
 
-        init = function(action) {
-            action = action.toString() ;
-            if (wires[action]) return action ;
+        Wire = (function() {
+                var _Wire = function(action) {
+                    copy(this, {
+                        state : true,
+                        action : action,
+                        listeners : {},
+                        listener : COMMON,
+                        called : 0,
+                        asked : {},
+                        ignored : {},
+                        triggered : {}
+                    }) ;
+                    Object.defineProperty(this, 'listener', {
+                        enumerable : false,
+                        configurable : true
+                    }) ;
+                } ;
+                copy(_Wire, {
+                    prototype : {
+                        set : function(name) {
+                            this.listener = this.listeners[name] ;
+                            return this ;
+                        },
+                        on : function() {
+                            if (!this.listener) return ;
+                            this.listener.state = true ;
+                            return this ;
+                        },
+                        off : function() {
+                            if (!this.listener) return ;
+                            this.listener.state = false ;
+                            return this ;
+                        },
+                        once : function(value) {
+                            if (!this.listener) return ;
+                            this.listener.unique = value !== false ;
+                            return this ;
+                        },
+                        safe : function(value) {
+                            if (!this.listener) return ;
+                            this.listener.safe = value !== false ;
+                            return this ;
+                        },
+                        less : function(value) {
+                            if (!this.listener) return ;
+                            this.listener.async = value !== false ;
+                            return this ;
+                        },
+                        out : function() {
+                            if (!this.listener) return ;
+                            throw "Not yet..." ;
+                            return this ;
+                        }
+                    },
 
-            wires[action] = clone(model.wire) ;
-            wires_stats[action] = clone(model.wire_stats) ;
+                    init : function(action, args) {
+                        action = action.toString() ;
 
-            return action ;
-        },
+                        if (!wires[action]) wires[action] = new Wire(action) ;
+                        var wire = wires[action] ;
 
-        wireParse = function(args) {
-            var listener,
-                fn ;
-            if (typeof args[0] === 'function') {
-                listener = 'common' ;
-                fn = args[0] ;
-            }
-            else if (typeof args[0] === 'string' && typeof args[1] === 'function') {
-                listener = args[0] ;
-                fn = args[1] ;
-            }
+                        if (args) {
+                            var parsedArgs = Wire.parse(args),
+                                l = parsedArgs.listener ;
+                            wire.asked[l] = wire.asked[l] || 0 ;
+                            wire.ignored[l] = wire.ignored[l] || 0 ;
+                            wire.triggered[l] = wire.triggered[l] || 0 ;
+                            return {
+                                action : action,
+                                listener : wire.listeners[l],
+                                l : l,
+                                fn : parsedArgs.fn,
+                                wire : wire,
+                                listeners : wire.listeners
+                            } ;
+                        }
+                        else {
+                            return {
+                                action : action,
+                                wire : wire,
+                                listeners : wire.listeners
+                            } ;
+                        }
+                    },
 
-            return {
-                listener : listener,
-                fn : fn
-            } ;
-        } ;
+                    parse : function(args) {
+                        var listener,
+                            fn ;
+                        if (typeof args[0] === 'function') {
+                            listener = COMMON ;
+                            fn = args[0] ;
+                        }
+                        else if (typeof args[0] === 'string') {
+                            listener = args[0] ;
+                            fn = args[1] ;
+                        }
+
+                        return {
+                            listener : listener,
+                            fn : fn
+                        } ;
+                    }
+                }) ;
+
+                return _Wire ;
+            })(),
+
+            Listener = (function() {
+                var _Listener = function(wire, fn) {
+                    copy(this, {
+                        state : true,
+                        unique : false,
+                        async : false,
+                        safe : false,
+                        wire : wire,
+                        fn : fn || function() {}
+                    }) ;
+                } ;
+                _Listener.prototype = {} ;
+                return _Listener ;
+            })()
 
     copy(String.prototype, {
-        wires : wires,
-        wires_stats : wires_stats,
-
         pow : function()
         {
-            var action = init(this),
-                listener ;
+            var __ = Wire.init(this),
+                args = arguments ;
 
-            if (!wires[action].state) return ;
+            if (!__.wire.state) return ;
+            __.wire.called++ ;
 
-            for (var l in wires[action].listeners) {
-                listener = wires[action].listeners[l] ;
-                if (listener.state)  {
-                    listener.fn.apply({}, arguments) ;
-                    wires_stats[action].listeners[l]++ ;
-                    if (listener.unique) action.unwire(l) ;
+            var listener ;
+            for (var l in __.wire.listeners) {
+                listener = __.wire.listeners[l] ;
+
+                if (listener.state) {
+
+                    if (listener.async) {
+                        setTimeout(function() {
+                            if (listener.safe) {
+                                try { listener.fn.apply({}, args) }
+                                catch (e) { console.info('/!\\ '+e) ; }
+                            }
+                            else listener.fn.apply({}, args) ;
+                        }, 0) ;
+                    }
+                    else {
+                        if (listener.safe) {
+                            try { listener.fn.apply({}, args) }
+                            catch (e) { console.info('/!\\ '+e) ; }
+                        }
+                        else listener.fn.apply({}, args) ;
+                    }
+
+                    __.wire.triggered[l]++ ;
+                    if (listener.unique) __.action.unwire(l) ;
                 }
             }
 
-            wires_stats[action].triggered++ ;
-
             return this ;
         },
 
-        powoff : function()
+        power : function(value)
         {
-            wires[init(this)].state = false ;
-            return this ;
-        },
+            Wire.init(this).wire.state = value == null ? true : !!value ;
 
-        powon : function()
-        {
-            wires[init(this)].state = true ;
             return this ;
         },
 
         wire : function()
         {
-            var action = init(this, true),
-                args = wireParse(arguments),
-                listener = args.listener,
-                listeners = wires[action].listeners,
-                fn = args.fn,
-                stats ;
+            var __ = Wire.init(this, arguments) ;
 
-            if (listeners[listener] != null)
-                throw "Listener '"+listener+"' is already wired to action '"+action+"'." ;
+            if (__.listener != null)
+                throw "Listener '"+__.l+"' is already wired to action '"+__.action+"'." ;
 
-            listeners[listener] = clone(model.listener) ;
-            listeners[listener].fn = fn ;
+            __.listeners[__.l] = new Listener(__.wire, __.fn) ;
+            __.wire.asked[__.l]++ ;
 
-            stats = wires_stats[action].listeners ;
-            stats[listener] = 0 ;
-
-            return this ;
+            __.wire.set(__.l) ;
+            return __.wire ;
         },
 
-        wireonce : function()
+        unwire : function()
         {
-            var action = init(this),
-                args = wireParse(arguments),
-                listener = args.listener,
-                fn = args.fn,
-                stats ;
-            
-            wires[action].listeners[listener] = clone(model.listener) ;
-            wires[action].listeners[listener].fn = fn ;
-            wires[action].listeners[listener].unique = true ;
+            var __ = Wire.init(this, arguments) ;
 
-            stats = wires_stats[action].listeners ;
-            stats[listener] = (stats[listener] || 0)+1 ;
+            if (__.l == null) delete __.listeners[COMMON] ;
+            else if (__.l === true) __.listeners = {} ;
+            else delete __.wire.listeners[__.l] ;
+            __.wire.ignored[__.l]++ ;
 
-            return this ;
-        },
-
-        unwire : function(listener)
-        {
-            var action = init(this) ;
-
-            if (listener == null) delete wires[action].listeners['common'] ;
-            else if (listener === true) wires[action].listeners = {} ;
-            else delete wires[action].listeners[listener] ;
-
-            return this ;
-        },
-
-        wireoff : function(listener)
-        {
-            var action = init(this) ;
-
-            if (listener == null) wires[action].listeners['common'].state = false ;
-            else if (listener === true)
-                for (var l in wires[action].listeners)
-                    wires[action].listeners[l].state = false ;
-            else wires[action].listeners[listener].state = false ;
-
-            return this ;
-        },
-
-        wireon : function(listener)
-        {
-            var action = init(this) ;
-
-            if (listener == null) wires[action].listeners['common'].state = true ;
-            else if (listener === true)
-                for (var l in wires[action].listeners)
-                    wires[action].listeners[l].state = true ;
-            else wires[action].listeners[listener].state = true ;
-
-            return this ;
+            return __.wire ;
+        }
+    }) ;
+    copy(String, {
+        wires : wires,
+        
+        setDefault : function(name) {
+            COMMON = name ;
         }
     }) ;
 })(

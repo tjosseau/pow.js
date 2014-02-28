@@ -15,20 +15,19 @@ Core :
 
 Functions :
   ✔ "event".pow() ; as Trigger @done (14-02-19 23:24)
-  ✔ "event".powoff() ; as Trigger paused @done (14-02-22 00:53)
-  ✔ "event".powon() ; as Trigger awake @done (14-02-22 00:53)
+  ✔ "event".power(boolean) ; as Trigger paused/awake @done (14-02-28 23:04)
   ✔ "event".wire() ; as Add event listener @done (14-02-19 23:41)
-  ✔ "event".wireonce() ; as Add event listener removed once called @done (14-02-22 00:21)
-  ☐ "event".wiresafe() ; as Add try-catched event listener
   ✔ "event".unwire() ; as Remove event listener @done (14-02-22 01:15)
-  ☐ "event".wireless() ; as Add asynchronous event listener
-  ☐ "event".wireout() ; as Add pre/post callbacks
-  ✔ "event".wireoff() ; as Pause event listener @done (14-02-23 11:44)
-  ✔ "event".wireon() ; as Awake event listener @done (14-02-23 11:44)
+  ✔ "event".wire().once() ; as Add event listener removed once called @done (14-02-22 00:21)
+  ✔ "event".wire().safe() ; as Add try-catched event listener @done (14-02-28 23:05)
+  ✔ "event".wire().less() ; as Add asynchronous event listener @done (14-02-28 23:05)
+  ☐ "event".wire().out() ; as Add pre/post callbacks
+  ✔ "event".wire().off() ; as Pause event listener @done (14-02-23 11:44)
+  ✔ "event".wire().on() ; as Awake event listener @done (14-02-23 11:44)
 
-Attributes :
-  ✔ "event".wires @done (14-02-22 00:55)
-  ✔ "event".wires_stats @done (14-02-22 00:55)
+Static :
+  ✔ String.wires @done (14-02-22 00:55)
+  ✔ String.setDefault() ; as change default common name while wiring @done (14-02-28 23:06)
 
 Integration :
   ☐ Emitter Receiver
