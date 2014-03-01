@@ -2,8 +2,8 @@
  * Pow Event manager
  *
  * @author      Thomas Josseau
- * @version     0.2.1
- * @date        2014.02.28
+ * @version     0.3.1
+ * @date        2014.03.01
  * @link        https://github.com/tjosseau/objectyve
  *
  * @description
@@ -13,7 +13,7 @@
 (function(jsCore) {
     // "use strict" ; // Strict mode - Disabled in production
 
-    var global ;
+    var global, Pow ;
     switch (jsCore) {
         case 'client' : global = window ;       break ;     // Client side JavaScript
         case 'server' : global = GLOBAL ;       break ;     // Server side JavaScript (with Node.js)
@@ -22,12 +22,12 @@
 
     var VERSION = [
             0,                      // Version of library's Core
-            2,                      // Updates - Modifications
+            3,                      // Updates - Modifications
             1,                      // Minor updates - Corrections
             new Date(
                 2014,               // Year \
-                2               -1, // Month >---- of last update
-                28                  // Day  /
+                3               -1, // Month >---- of last update
+                1                   // Day  /
             )
         ],
 
@@ -115,28 +115,23 @@
                             if (!this.listener) return ;
                             this.listener.async = value !== false ;
                             return this ;
-                        },
-                        out : function() {
-                            if (!this.listener) return ;
-                            throw "Not yet..." ;
-                            return this ;
                         }
                     },
 
-                    init : function(action, args) {
-                        action = action.toString() ;
+                    init : function(args) {
+                        action = args[0].toString() ;
 
                         if (!wires[action]) wires[action] = new Wire(action) ;
                         var wire = wires[action] ;
 
-                        if (args) {
+                        if (args.length > 1) {
                             var parsedArgs = Wire.parse(args),
                                 l = parsedArgs.listener ;
                             wire.asked[l] = wire.asked[l] || 0 ;
                             wire.ignored[l] = wire.ignored[l] || 0 ;
                             wire.triggered[l] = wire.triggered[l] || 0 ;
                             return {
-                                action : action,
+                                action : parsedArgs.action,
                                 listener : wire.listeners[l],
                                 l : l,
                                 fn : parsedArgs.fn,
@@ -156,16 +151,17 @@
                     parse : function(args) {
                         var listener,
                             fn ;
-                        if (typeof args[0] === 'function') {
+                        if (typeof args[1] === 'function') {
                             listener = COMMON ;
-                            fn = args[0] ;
-                        }
-                        else if (typeof args[0] === 'string') {
-                            listener = args[0] ;
                             fn = args[1] ;
+                        }
+                        else if (typeof args[1] === 'string') {
+                            listener = args[1] ;
+                            fn = args[2] ;
                         }
 
                         return {
+                            action : args[0],
                             listener : listener,
                             fn : fn
                         } ;
@@ -188,13 +184,15 @@
                 } ;
                 _Listener.prototype = {} ;
                 return _Listener ;
-            })()
+            })() ;
 
-    copy(String.prototype, {
-        pow : function()
+    Pow = global.Pow = {
+        wires : wires,
+
+        pow : function(action, args)
         {
-            var __ = Wire.init(this),
-                args = arguments ;
+            var __ = Wire.init([action]) ;
+            args = args || [] ;
 
             if (!__.wire.state) return ;
             __.wire.called++ ;
@@ -204,7 +202,6 @@
                 listener = __.wire.listeners[l] ;
 
                 if (listener.state) {
-
                     if (listener.async) {
                         setTimeout(function() {
                             if (listener.safe) {
@@ -230,16 +227,25 @@
             return this ;
         },
 
-        power : function(value)
+        on : function(action)
         {
-            Wire.init(this).wire.state = value == null ? true : !!value ;
+            var __ = Wire.init([action]) ;
+            __.wire.state = true ;
 
+            return this ;
+        },
+
+        off : function(action)
+        {
+            var __ = Wire.init([action]) ;
+            __.wire.state = false ;
+            
             return this ;
         },
 
         wire : function()
         {
-            var __ = Wire.init(this, arguments) ;
+            var __ = Wire.init(arguments) ;
 
             if (__.listener != null)
                 throw "Listener '"+__.l+"' is already wired to action '"+__.action+"'." ;
@@ -253,7 +259,7 @@
 
         unwire : function()
         {
-            var __ = Wire.init(this, arguments) ;
+            var __ = Wire.init(arguments) ;
 
             if (__.l == null) delete __.listeners[COMMON] ;
             else if (__.l === true) __.listeners = {} ;
@@ -261,15 +267,28 @@
             __.wire.ignored[__.l]++ ;
 
             return __.wire ;
-        }
-    }) ;
-    copy(String, {
-        wires : wires,
-        
-        setDefault : function(name) {
+        },
+
+        setDefaultWire : function(name) {
             COMMON = name ;
+        },
+
+        extend : {
+            String : function() {
+                copy(global.String.prototype, {
+                    pow : function() {
+                        return Pow.pow(this, arguments) ;
+                    },
+                    wire : function($1, $2) {
+                        return Pow.wire(this, $1, $2) ;
+                    },
+                    unwire : function($1) {
+                        return Pow.unwire(this, $1) ;
+                    }
+                }) ;
+            }
         }
-    }) ;
+    } ;
 })(
     typeof window !== 'undefined' && window.document ? 'client'         // Web browser compatibility
   : typeof module !== 'undefined' && module.exports ? 'server'          // Node.js Server compatibility

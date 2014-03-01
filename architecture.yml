@@ -26,6 +26,8 @@ project.todo: @blank.todo
 # Library
 Pow:
     Pow.js: 1
+    plugins:
+        Pow-jquery.js: 1
 
 # Index #
 index.html: @index.html     # Client index

@@ -11,25 +11,20 @@ Documentations :
  ☐ Website
 
 Core :
+  ✔ Pow root @done (14-03-01 13:14)
   ✔ String prototype root @done (14-02-19 22:57)
+  ☐ jQuery prototype root
 
 Functions :
-  ✔ "event".pow() ; as Trigger @done (14-02-19 23:24)
-  ✔ "event".power(boolean) ; as Trigger paused/awake @done (14-02-28 23:04)
-  ✔ "event".wire() ; as Add event listener @done (14-02-19 23:41)
-  ✔ "event".unwire() ; as Remove event listener @done (14-02-22 01:15)
-  ✔ "event".wire().once() ; as Add event listener removed once called @done (14-02-22 00:21)
-  ✔ "event".wire().safe() ; as Add try-catched event listener @done (14-02-28 23:05)
-  ✔ "event".wire().less() ; as Add asynchronous event listener @done (14-02-28 23:05)
-  ☐ "event".wire().out() ; as Add pre/post callbacks
-  ✔ "event".wire().off() ; as Pause event listener @done (14-02-23 11:44)
-  ✔ "event".wire().on() ; as Awake event listener @done (14-02-23 11:44)
-
-Static :
-  ✔ String.wires @done (14-02-22 00:55)
-  ✔ String.setDefault() ; as change default common name while wiring @done (14-02-28 23:06)
-
-Integration :
-  ☐ Emitter Receiver
-  ☐ jQuery events
-  ☐ Socket.io
+  ✔ Pow.setDefaultWire() ; as Change default wiring name @done (14-02-28 23:06)
+  ✔ Pow.pow() ; as Trigger @done (14-02-19 23:24)
+  ✔ Pow.on() ; as Trigger awake @done (14-03-01 13:16)
+  ✔ Pow.off() ; as Trigger paused @done (14-03-01 13:16)
+  ✔ Pow.wire() ; as Add event listener @done (14-02-19 23:41)
+  ✔ Pow.unwire() ; as Remove event listener @done (14-02-22 01:15)
+  ✔ Pow.wire().once() ; as Add event listener removed once called @done (14-02-22 00:21)
+  ✔ Pow.wire().safe() ; as Add try-catched event listener @done (14-02-28 23:05)
+  ✔ Pow.wire().less() ; as Add asynchronous event listener @done (14-02-28 23:05)
+  ☐ Pow.wire().out() ; as Add pre/post callbacks
+  ✔ Pow.wire().off() ; as Pause event listener @done (14-02-23 11:44)
+  ✔ Pow.wire().on() ; as Awake event listener @done (14-02-23 11:44)
