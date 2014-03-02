@@ -2,8 +2,8 @@
  * Pow Event manager
  *
  * @author      Thomas Josseau
- * @version     0.3.1
- * @date        2014.03.01
+ * @version     0.4.2
+ * @date        2014.03.03
  * @link        https://github.com/tjosseau/objectyve
  *
  * @description
@@ -22,12 +22,12 @@
 
     var VERSION = [
             0,                      // Version of library's Core
-            3,                      // Updates - Modifications
-            1,                      // Minor updates - Corrections
+            4,                      // Updates - Modifications
+            2,                      // Minor updates - Corrections
             new Date(
                 2014,               // Year \
                 3               -1, // Month >---- of last update
-                1                   // Day  /
+                3                   // Day  /
             )
         ],
 
@@ -66,10 +66,45 @@
             for (var p in object) context[p] = object[p] ;
         },
 
+        setOf = function(Constructor) {
+            var Set = function(objs) {
+                this.objects = {} ;
+                copy(this.objects, objs) ;
+            }
+            Set.prototype = {
+                _set : function(name, value) {
+                    this.objects[name] = value ;
+                },
+                _unset : function(name) {
+                    delete this.objects[name] ;
+                },
+                _each : function(fn, context) {
+                    for (var o in this.objects) fn.call(context, o, this.objects[o]) ;
+                }
+            } ;
+            for (var m in Constructor.prototype)
+                (function(method) {
+                    Set.prototype[method] = function() {
+                        for (var w in this.objects)
+                            this.objects[w][method].apply(this.objects[w], arguments) ;
+                        return this ;
+                    } ;
+                })(m) ;
+            return Set ;
+        },
+
+        parseStringSet = function(string) {
+            var obj = {},
+                names = string.split(" ") ;
+            for (var n=0, nl=names.length ; n<nl ; n++)
+                obj[names[n]] = null ;
+            return obj ;
+        },
+
         wires = {},
 
         Wire = (function() {
-                var _Wire = function(action) {
+                var Wire = function(action) {
                     copy(this, {
                         state : true,
                         action : action,
@@ -85,7 +120,7 @@
                         configurable : true
                     }) ;
                 } ;
-                copy(_Wire, {
+                copy(Wire, {
                     prototype : {
                         set : function(name) {
                             this.listener = this.listeners[name] ;
@@ -118,61 +153,58 @@
                         }
                     },
 
-                    init : function(args) {
-                        action = args[0].toString() ;
-
-                        if (!wires[action]) wires[action] = new Wire(action) ;
-                        var wire = wires[action] ;
-
-                        if (args.length > 1) {
-                            var parsedArgs = Wire.parse(args),
-                                l = parsedArgs.listener ;
-                            wire.asked[l] = wire.asked[l] || 0 ;
-                            wire.ignored[l] = wire.ignored[l] || 0 ;
-                            wire.triggered[l] = wire.triggered[l] || 0 ;
-                            return {
-                                action : parsedArgs.action,
-                                listener : wire.listeners[l],
-                                l : l,
-                                fn : parsedArgs.fn,
-                                wire : wire,
-                                listeners : wire.listeners
-                            } ;
-                        }
-                        else {
-                            return {
-                                action : action,
-                                wire : wire,
-                                listeners : wire.listeners
-                            } ;
-                        }
-                    },
-
                     parse : function(args) {
-                        var listener,
+                        var listeners = COMMON,
                             fn ;
                         if (typeof args[1] === 'function') {
-                            listener = COMMON ;
                             fn = args[1] ;
                         }
                         else if (typeof args[1] === 'string') {
-                            listener = args[1] ;
+                            listeners = args[1] ;
                             fn = args[2] ;
                         }
 
                         return {
-                            action : args[0],
-                            listener : listener,
+                            actions : parseStringSet(args[0]),
+                            listeners : parseStringSet(listeners),
+                            fn : fn
+                        } ;
+                    },
+
+                    init : function(action) {
+                        if (!this.wires[action]) this.wires[action] = new Wire(action) ;
+                        var wire = this.wires[action] ;
+
+                        return {
+                            action : action,
+                            wire : wire,
+                            listeners : wire.listeners
+                        } ;
+                    },
+
+                    listen : function(action, l, fn) {
+                        var wire = this.wires[action] ;
+                        l = l ;
+
+                        wire.asked[l] = wire.asked[l] || 0 ;
+                        wire.ignored[l] = wire.ignored[l] || 0 ;
+                        wire.triggered[l] = wire.triggered[l] || 0 ;
+
+                        return {
+                            listener : wire.listeners[l],
+                            l : l,
                             fn : fn
                         } ;
                     }
                 }) ;
 
-                return _Wire ;
+                return Wire ;
             })(),
 
+            WireSet = setOf(Wire),
+
             Listener = (function() {
-                var _Listener = function(wire, fn) {
+                var Listener = function(wire, fn) {
                     copy(this, {
                         state : true,
                         unique : false,
@@ -182,91 +214,138 @@
                         fn : fn || function() {}
                     }) ;
                 } ;
-                _Listener.prototype = {} ;
-                return _Listener ;
-            })() ;
+                Listener.prototype = {} ;
+                return Listener ;
+            })(),
+
+            ListenerSet = setOf(Listener) ;
 
     Pow = global.Pow = {
         wires : wires,
+        model : {
+            Wire : Wire,
+            Listener : Listener
+        },
 
         pow : function(action, args)
         {
-            var __ = Wire.init([action]) ;
-            args = args || [] ;
+            var args = Wire.parse(arguments),
+                wires = new WireSet(args.actions),
+                __,
+                listener ;
 
-            if (!__.wire.state) return ;
-            __.wire.called++ ;
+            wires._each(function(action) {
+                __ = Wire.init.call(this, action) ;
 
-            var listener ;
-            for (var l in __.wire.listeners) {
-                listener = __.wire.listeners[l] ;
+                if (!__.wire.state) return ;
+                __.wire.called++ ;
 
-                if (listener.state) {
-                    if (listener.async) {
-                        setTimeout(function() {
+                for (var l in __.wire.listeners) {
+                    listener = __.wire.listeners[l] ;
+
+                    if (listener.state) {
+                        if (listener.async) {
+                            setTimeout(function() {
+                                if (listener.safe) {
+                                    try { listener.fn.apply({}, args) }
+                                    catch (e) { console.info('/!\\ '+e) ; }
+                                }
+                                else {
+                                    listener.fn.apply({}, args) ;
+                                }
+                            }, 0) ;
+                        }
+                        else {
                             if (listener.safe) {
                                 try { listener.fn.apply({}, args) }
                                 catch (e) { console.info('/!\\ '+e) ; }
                             }
-                            else listener.fn.apply({}, args) ;
-                        }, 0) ;
-                    }
-                    else {
-                        if (listener.safe) {
-                            try { listener.fn.apply({}, args) }
-                            catch (e) { console.info('/!\\ '+e) ; }
+                            else {
+                                listener.fn.apply({}, args) ;
+                            }
                         }
-                        else listener.fn.apply({}, args) ;
+
+                        __.wire.triggered[l]++ ;
+                        if (listener.unique) Pow.unwire.call(this, action, l) ;
                     }
-
-                    __.wire.triggered[l]++ ;
-                    if (listener.unique) __.action.unwire(l) ;
                 }
-            }
-
-            return this ;
+            }, this) ;
         },
 
         on : function(action)
         {
-            var __ = Wire.init([action]) ;
-            __.wire.state = true ;
+            var wires = new WireSet(Wire.parse(arguments).actions),
+                __ ;
+
+            wires._each(function(action) {
+                __ = Wire.init.call(this, action) ;
+                __.wire.state = true ;
+            }, this) ;
 
             return this ;
         },
 
         off : function(action)
         {
-            var __ = Wire.init([action]) ;
-            __.wire.state = false ;
-            
+            var wires = new WireSet(Wire.parse(arguments).actions),
+                __ ;
+
+            wires._each(function(action) {
+                __ = Wire.init.call(this, action) ;
+                __.wire.state = false ;
+            }, this) ;
+
             return this ;
         },
 
         wire : function()
         {
-            var __ = Wire.init(arguments) ;
+            var args = Wire.parse(arguments),
+                wires = new WireSet(args.actions),
+                __ ;
 
-            if (__.listener != null)
-                throw "Listener '"+__.l+"' is already wired to action '"+__.action+"'." ;
+            wires._each(function(action) {
+                __ = Wire.init.call(this, action) ;
+                wires._set(action, Pow.wires[action]) ;
 
-            __.listeners[__.l] = new Listener(__.wire, __.fn) ;
-            __.wire.asked[__.l]++ ;
+                new ListenerSet(args.listeners)._each(function(l) {
+                    copy(__, Wire.listen.call(this, __.action, l, args.fn)) ;
 
-            __.wire.set(__.l) ;
-            return __.wire ;
+                    if (__.fn) {
+                        if (__.listener != null)
+                            throw "Listener '"+__.l+"' is already wired to action '"+__.action+"'." ;
+
+                        __.listeners[__.l] = new Listener(__.wire, __.fn) ;
+                        __.wire.asked[__.l]++ ;
+                    }
+
+                    __.wire.set(__.l) ;
+                }, this) ;
+            }, this) ;
+
+            return wires ;
         },
 
         unwire : function()
         {
-            var __ = Wire.init(arguments) ;
+            var args = Wire.parse(arguments),
+                wires = new WireSet(args.actions),
+                __ ;
 
-            if (__.l == null) delete __.listeners[COMMON] ;
-            else if (__.l === true) __.listeners = {} ;
-            else delete __.wire.listeners[__.l] ;
-            __.wire.ignored[__.l]++ ;
+            wires._each(function(action) {
+                __ = Wire.init.call(this, action) ;
+                wires._set(action, Pow.wires[action]) ;
 
-            return __.wire ;
+                new ListenerSet(args.listeners)._each(function(l) {
+                    copy(__, Wire.listen.call(this, action, l, args.fn)) ;
+
+                    if (__.l === true) __.listeners = {} ;
+                    else delete __.wire.listeners[__.l] ;
+                    __.wire.ignored[__.l]++ ;
+                }, this) ;
+            }, this) ;
+
+            return wires ;
         },
 
         setDefaultWire : function(name) {
@@ -277,13 +356,13 @@
             String : function() {
                 copy(global.String.prototype, {
                     pow : function() {
-                        return Pow.pow(this, arguments) ;
+                        return Pow.pow(this.toString(), arguments) ;
                     },
                     wire : function($1, $2) {
-                        return Pow.wire(this, $1, $2) ;
+                        return Pow.wire(this.toString(), $1, $2) ;
                     },
                     unwire : function($1) {
-                        return Pow.unwire(this, $1) ;
+                        return Pow.unwire(this.toString(), $1) ;
                     }
                 }) ;
             }
