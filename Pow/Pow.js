@@ -227,12 +227,12 @@
             Listener : Listener
         },
 
-        pow : function(action, args)
+        pow : function(actions, args)
         {
-            var args = Wire.parse(arguments),
-                wires = new WireSet(args.actions),
+            var wires = new WireSet(parseStringSet(actions)),
                 __,
                 listener ;
+            args = args || [] ;
 
             wires._each(function(action) {
                 __ = Wire.init.call(this, action) ;

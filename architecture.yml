@@ -21,7 +21,7 @@ node_modules: 0
 
 # Documentation #
 README.md: @README.md
-project.todo: @blank.todo
+Pow.todo: @blank.todo
 
 # Library
 Pow:

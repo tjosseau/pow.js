@@ -14,7 +14,7 @@ Core :
   ✔ Manipulate a set of Wires and Listeners @done (14-03-03 00:26)
   ✔ Pow root @done (14-03-01 13:14)
   ✔ String prototype root @done (14-02-19 22:57)
-  ☐ jQuery prototype root
+  ✔ jQuery prototype root @done (14-03-03 23:32)
 
 Functions :
   ✔ Pow.setDefaultWire() ; as Change default wiring name @done (14-02-28 23:06)
