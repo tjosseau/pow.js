@@ -2,8 +2,8 @@
  * Pow Event manager
  *
  * @author      Thomas Josseau
- * @version     0.4.2
- * @date        2014.03.03
+ * @version     0.4.3
+ * @date        2014.03.04
  * @link        https://github.com/tjosseau/objectyve
  *
  * @description
@@ -23,11 +23,11 @@
     var VERSION = [
             0,                      // Version of library's Core
             4,                      // Updates - Modifications
-            2,                      // Minor updates - Corrections
+            3,                      // Minor updates - Corrections
             new Date(
                 2014,               // Year \
                 3               -1, // Month >---- of last update
-                3                   // Day  /
+                4                   // Day  /
             )
         ],
 
@@ -72,13 +72,16 @@
                 copy(this.objects, objs) ;
             }
             Set.prototype = {
-                _set : function(name, value) {
+                get : function(name) {
+                    return this.objects[name] ;
+                },
+                set : function(name, value) {
                     this.objects[name] = value ;
                 },
-                _unset : function(name) {
+                unset : function(name) {
                     delete this.objects[name] ;
                 },
-                _each : function(fn, context) {
+                each : function(fn, context) {
                     for (var o in this.objects) fn.call(context, o, this.objects[o]) ;
                 }
             } ;
@@ -122,7 +125,7 @@
                 } ;
                 copy(Wire, {
                     prototype : {
-                        set : function(name) {
+                        select : function(name) {
                             this.listener = this.listeners[name] ;
                             return this ;
                         },
@@ -234,7 +237,7 @@
                 listener ;
             args = args || [] ;
 
-            wires._each(function(action) {
+            wires.each(function(action) {
                 __ = Wire.init.call(this, action) ;
 
                 if (!__.wire.state) return ;
@@ -277,7 +280,7 @@
             var wires = new WireSet(Wire.parse(arguments).actions),
                 __ ;
 
-            wires._each(function(action) {
+            wires.each(function(action) {
                 __ = Wire.init.call(this, action) ;
                 __.wire.state = true ;
             }, this) ;
@@ -290,7 +293,7 @@
             var wires = new WireSet(Wire.parse(arguments).actions),
                 __ ;
 
-            wires._each(function(action) {
+            wires.each(function(action) {
                 __ = Wire.init.call(this, action) ;
                 __.wire.state = false ;
             }, this) ;
@@ -304,11 +307,11 @@
                 wires = new WireSet(args.actions),
                 __ ;
 
-            wires._each(function(action) {
+            wires.each(function(action) {
                 __ = Wire.init.call(this, action) ;
-                wires._set(action, Pow.wires[action]) ;
+                wires.set(action, Pow.wires[action]) ;
 
-                new ListenerSet(args.listeners)._each(function(l) {
+                new ListenerSet(args.listeners).each(function(l) {
                     copy(__, Wire.listen.call(this, __.action, l, args.fn)) ;
 
                     if (__.fn) {
@@ -319,7 +322,7 @@
                         __.wire.asked[__.l]++ ;
                     }
 
-                    __.wire.set(__.l) ;
+                    __.wire.select(__.l) ;
                 }, this) ;
             }, this) ;
 
@@ -332,11 +335,11 @@
                 wires = new WireSet(args.actions),
                 __ ;
 
-            wires._each(function(action) {
+            wires.each(function(action) {
                 __ = Wire.init.call(this, action) ;
-                wires._set(action, Pow.wires[action]) ;
+                wires.set(action, Pow.wires[action]) ;
 
-                new ListenerSet(args.listeners)._each(function(l) {
+                new ListenerSet(args.listeners).each(function(l) {
                     copy(__, Wire.listen.call(this, action, l, args.fn)) ;
 
                     if (__.l === true) __.listeners = {} ;
