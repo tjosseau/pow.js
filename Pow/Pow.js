@@ -2,8 +2,8 @@
  * Pow Event manager
  *
  * @author      Thomas Josseau
- * @version     0.4.3
- * @date        2014.03.04
+ * @version     0.4.34
+ * @date        2014.03.06
  * @link        https://github.com/tjosseau/objectyve
  *
  * @description
@@ -23,11 +23,11 @@
     var VERSION = [
             0,                      // Version of library's Core
             4,                      // Updates - Modifications
-            3,                      // Minor updates - Corrections
+            4,                      // Minor updates - Corrections
             new Date(
                 2014,               // Year \
                 3               -1, // Month >---- of last update
-                4                   // Day  /
+                6                   // Day  /
             )
         ],
 
@@ -349,6 +349,10 @@
             }, this) ;
 
             return wires ;
+        },
+
+        hasWire : function(action) {
+            return wires[action] && !is.empty(wires[action].listeners) ;
         },
 
         setDefaultWire : function(name) {
